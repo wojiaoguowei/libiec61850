@@ -28,6 +28,8 @@
 #include <stdio.h>
 
 #include "static_model.h"
+#include "mms_value.h"
+#include "mms_value_internal.h"
 
 /* import IEC 61850 device model created from SCL-File */
 extern IedModel iedModel;
@@ -63,9 +65,30 @@ int main(int argc, char** argv) {
 	running = 1;
 
 	signal(SIGINT, sigint_handler);
+	float fltValue = 0;
+	MmsValue *value;
 
 	while (running) {
-		Thread_sleep(1);
+		Thread_sleep(1000);
+
+
+		Timestamp iecTimestamp;
+		uint64_t timestamp = Hal_getTimeInMs();
+
+
+		Timestamp_clearFlags(&iecTimestamp);
+		Timestamp_setTimeInMilliseconds(&iecTimestamp, timestamp);
+		Timestamp_setLeapSecondKnown(&iecTimestamp, true);
+
+		IedServer_updateTimestampAttributeValue(iedServer, IEDMODEL_PROT01_MMXU6_A_res_t, &iecTimestamp);
+
+
+		value = MmsValue_newFloat(fltValue);
+		IedServer_updateAttributeValue(iedServer, IEDMODEL_PROT01_MMXU6_A_res_cVal_mag_f, value);
+		MmsValue_delete(value);
+
+		fltValue += 5;
+
 	}
 
 	/* stop MMS server - close TCP server socket and all client sockets */
